@@ -10,7 +10,7 @@ Acquisition Proteomics". Anal. Chem. 2017, acs.analchem.7b00112.
 ********************************************************************************
 
 Setup:
-	1) Download TWIMExtract_Setup.exe from http://sites.lsa.umich.edu/ruotolo/software/twim-extract/
+	1) Download TWIMExtract_Setup.exe from https://github.com/RuotoloLab/TWIMExtract/releases/tag/v1.6
 	2) Run TWIMExtract_Setup.exe. Setup will create a shortcut (Run_TWIMExtract.bat) that should be used 
 		to run the program. 
 	3) Double click Run_TWIMExtract.bat to run TWIMExtract
