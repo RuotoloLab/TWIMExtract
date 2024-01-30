@@ -13,11 +13,10 @@ import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.IntStream;
 
 /**
  * This file is part of TWIMExtract
@@ -73,20 +72,15 @@ public class IMExtractRunner {
     public static void getFullDataRanges(File rawFile, int nFunction)
     {
         try {
-            StringBuilder cmdarray = new StringBuilder();
-            
-            cmdarray.append(exeFile.getCanonicalPath() + " ");
-            cmdarray.append("-d ");
-            cmdarray.append("\"" + rawFile.getPath() + "\" ");
-            cmdarray.append("-f " + nFunction + " ");
-            cmdarray.append("-o ");
-            cmdarray.append("\"" + getRoot() + File.separator + "ranges.txt\" ");
-            cmdarray.append("-t ");
-            cmdarray.append("mobilicube");
-            
-            runIMSExtract(cmdarray.toString());
-//            initialiseBinaryMaps();
-            
+			String cmdarray = exeFile.getCanonicalPath() + " " +
+					"-d " +
+					"\"" + rawFile.getPath() + "\" " +
+					"-f " + nFunction + " " +
+					"-o " +
+					"\"" + getRoot() + File.separator + "ranges.txt\" " +
+					"-t " +
+					"mobilicube";
+			runIMSExtract(cmdarray);
         } catch (IOException ex) {
             Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -107,7 +101,7 @@ public class IMExtractRunner {
     public static double[] readDataRanges(String rangesName, double[] rangesArr){
     	// Data reader
         BufferedReader reader = null;
-        String line = null;
+        String line;
         
         // Read the file
         try {
@@ -133,10 +127,9 @@ public class IMExtractRunner {
         			} else if (nameSplits[1].toLowerCase().matches("end")){
         				maxMZ = inputValue;
         				rangesArr[1] = inputValue;
-        			} else {
-        				// Invalid input name
-        			}
-        			break;    
+        			}  // Invalid input name
+
+					break;
         		case "RT":
         			if (nameSplits[1].toLowerCase().matches("start")){
         				minRT = inputValue;
@@ -144,10 +137,9 @@ public class IMExtractRunner {
         			} else if (nameSplits[1].toLowerCase().matches("end")){
         				maxRT = inputValue;
         				rangesArr[4] = inputValue;
-        			} else {
-        				// Invalid input name
-        			}
-        			break;
+        			}  // Invalid input name
+
+					break;
 
         		case "DT":
         			if (nameSplits[1].toLowerCase().matches("start")){
@@ -156,24 +148,18 @@ public class IMExtractRunner {
         			} else if (nameSplits[1].toLowerCase().matches("end")){
         				maxDT = inputValue;
         				rangesArr[7] = inputValue;
-        			} else {
-        				// Invalid input name
-        			}
-        			break;
+        			}  // Invalid input name
+
+					break;
 
         		}
         	}
 
         }
-        catch (FileNotFoundException ex)
+        catch (IOException ex)
         {
             Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        catch (IOException iox)
-        {
-            Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, iox);
-        }
-        finally
+        } finally
         {
             try
             {
@@ -186,11 +172,33 @@ public class IMExtractRunner {
         }
         return rangesArr;
     }
-    
+
+	/**
+	 * Read the root/ce.dat file and return the CV information. ce.dat file has individual CV values, 1 per line
+	 * and no other information
+	 * @return CV list
+	 */
+	private static ArrayList<Double> getCVfromCEdat() {
+    	ArrayList<Double> cvData = new ArrayList<>();
+    	File ceFile = new File(preferences.getROOT_PATH() + "\\_ce.dat");
+    	BufferedReader reader;
+    	try {
+    		reader = new BufferedReader(new FileReader(ceFile));
+    		String line;
+    		while ((line = reader.readLine()) != null){
+    			double cv = Double.parseDouble(line);
+    			cvData.add(cv);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return cvData;
+	}
+
     /**
      * Reads the data ranges from the specified file
      * FOR OLD RANGE FILE FORMAT (updated 11/30/16)
-     * @param rangesFilePath: the path to the ranges text file
+     * @param rangesName: the path to the ranges text file
      * @return - an array of the ranges specified in the ranges file
      */
     public static double[] readDataRangesOld(String rangesName)
@@ -265,16 +273,10 @@ public class IMExtractRunner {
                     valueCounter++;
                 }
             }
-        }
-        catch (FileNotFoundException ex)
+        } catch (IOException ex)
         {
             Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        catch (IOException iox)
-        {
-            Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, iox);
-        }
-        finally
+        } finally
         {
             try
             {
@@ -296,7 +298,7 @@ public class IMExtractRunner {
     	// Print the ranges on 3 lines, as they're typically arranged that way in the text file.
     	for(int i=0; i<rangeArr.length;i++){
     		System.out.print(rangeArr[i] + " ");
-    		if (i==2 || i==5 || i==rangeArr.length){
+    		if (i==2 || i==5 || i==rangeArr.length - 1){
     			System.out.println();
     		}
     	}
@@ -304,16 +306,15 @@ public class IMExtractRunner {
     
     /**
 	 * Returns an array of the last data ranges run
-	 * @return 
+	 * @return ranges
 	 */
 	public double[] getLastRanges() {
-		double[] ranges = new double[]{minMZ, maxMZ, mzBins, minRT, maxRT, rtBins, minDT, maxDT, dtBins};
-		return ranges;
+		return new double[]{minMZ, maxMZ, mzBins, minRT, maxRT, rtBins, minDT, maxDT, dtBins};
 	}
 
 	/**
 	 * Gets the root directory
-	 * @return
+	 * @return root dir (File)
 	 */
 	private static File getRoot(){
 		return root;
@@ -321,7 +322,7 @@ public class IMExtractRunner {
 
 	/**
 	 * Sets the root directory
-	 * @param path 
+	 * @param path set root to this path
 	 */
 	private static void setRoot(String path){
 		//System.out.println("Setting root: " + path);
@@ -337,7 +338,7 @@ public class IMExtractRunner {
 	 * @param outputFilePath = where to write the output file
 	 * @param ruleMode = whether to use range files or rule files for extracting
 	 * @param ruleFile = the rule OR range file being used for the extraction
-	 * @param extraction_mode = the type of extraction to be done (DT, MZ, RT, or DTMZ)
+	 * @param extractionMode = the type of extraction to be done (DT, MZ, RT, or RTDT)
 	 */
 	public void extractMobiligramOneFile(ArrayList<DataVectorInfoObject> allFunctions, String outputFilePath, boolean ruleMode, File ruleFile, int extractionMode, boolean dt_in_ms){
 		String lineSep = System.getProperty("line.separator");
@@ -345,41 +346,14 @@ public class IMExtractRunner {
 		// Get info types to print from first function (they will be the same for all functions)
 		boolean[] infoTypes = allFunctions.get(0).getInfoTypes();
 		try {
-			// Collect mobData for all functions in the list
-			ArrayList<MobData> allMobData = new ArrayList<MobData>();
-
-			for (DataVectorInfoObject function : allFunctions){
-				String rawDataFilePath = function.getRawDataPath();
-				String rawName = function.getRawDataName();
-
-				int functionNum = function.getFunction();
-				double conecv = function.getConeCV();
-				double trapcv = function.getCollisionEnergy();
-				double transfcv = function.getTransfCV();
-				double wh = function.getWaveHeight();
-				double wv = function.getWaveVel();
-				double[] rangeVals = function.getRangeVals();
-				String rangeName = function.getRangeName();
-
-				double[][] data = null;
-				if (extractionMode == DT_MODE){
-					data = generateReplicateMobiligram(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
-
-				} else if (extractionMode == MZ_MODE){
-					data = generateReplicateSpectrum(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
-
-				} else if (extractionMode == RT_MODE){
-					data = generateReplicateChromatogram(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
-
-				} else if (extractionMode == DTMZ_MODE){
-					//    				data = generateReplicateDTMZ(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
-				}
-
-				if (data == null){
-					System.out.println("Error during extraction! Check your raw data - it might be empty or corrupted");
-				}
-				MobData currentMob = new MobData(data,rawName,rangeName,conecv,trapcv,transfcv,wh,wv);
-				allMobData.add(currentMob);
+			// Get data
+			ArrayList<MobData> allMobData;
+			if (extractionMode != IMExtractRunner.RTDT_MODE) {
+				allMobData = extractMobiligramReturn(allFunctions, ruleMode, ruleFile, extractionMode, dt_in_ms);
+			} else {
+				assert allFunctions.size() == 1;	// MRM mode can have at most 1 function passed at a time - this should be mandated in the outer function but checked here to confirm
+				DataVectorInfoObject function = allFunctions.get(0);
+				allMobData = generateMobiligram2D(function, ruleMode, ruleFile, extractionMode, dt_in_ms);
 			}
 
 			// Now, write the output file
@@ -387,12 +361,12 @@ public class IMExtractRunner {
 			BufferedWriter writer = new BufferedWriter(new FileWriter(out));
 
 			// Get the formatted text output for the appropriate extraction type (RT has to be handled differently from others)
-			String[] arraylines = null;
+			String[] arraylines;
 			if (extractionMode == RT_MODE){
 				arraylines = rtWriteOutputs(allMobData, infoTypes);
 			} else {
 				double maxdt = 200; 	// if extracting in bins, maxdt = max bin
-				if (extractionMode == DT_MODE){
+				if (extractionMode == DT_MODE || extractionMode == RTDT_MODE){
 					if (dt_in_ms){
 						// compute max DT using max m/z info from _extern.inf file
 						maxdt = get_max_dt(allFunctions.get(0).getRawDataPath());
@@ -408,12 +382,7 @@ public class IMExtractRunner {
 			}
 			writer.flush();
 			writer.close();
-		}
-		catch (FileNotFoundException ex) 
-		{
-			ex.printStackTrace();
-		} 
-		catch (IOException ex) 
+		} catch (IOException ex)
 		{
 			ex.printStackTrace();
 		}
@@ -431,12 +400,12 @@ public class IMExtractRunner {
 		ArrayList<MobData> allMobData = saveObj.getMobData();
 
 		// Get the formatted text output for the appropriate extraction type (RT has to be handled differently from others)
-		String[] arraylines = null;
+		String[] arraylines;
 		if (saveObj.getExtractionMode() == RT_MODE){
 			arraylines = rtWriteOutputs(allMobData, infoTypes);
 		} else {
 			double maxdt = 200; 	// if extracting in bins, maxdt = max bin
-			if (saveObj.getExtractionMode() == DT_MODE){
+			if (saveObj.getExtractionMode() == DT_MODE || saveObj.getExtractionMode() == RTDT_MODE){
 				if (saveObj.isDT_in_MS()){
 					// compute max DT using max m/z info from _extern.inf file
 					maxdt = get_max_dt(saveObj.getReferenceFunction().getRawDataPath());
@@ -458,63 +427,86 @@ public class IMExtractRunner {
 			e.printStackTrace();
 		}
 	}
-	
+	/**
+	 * Extract Mobiligram method for CIU (2D RTDT) extractions. Takes a list of functions to analyze to convenient running with old setup,
+	 * but ONLY uses the first function. Calls the new helper methods to perform a SINGLE 2D RTDT extraction and returns
+	 * mobData as in the 1D extraction method.
+	 * the generated mobdata for output as appropriate.
+	 * @param function = function (data) to be extracted with all their associated information in DataVectorInfoObject format
+	 * @param dt_in_ms = whether to save output in bins or ms
+	 * @param ruleMode = whether to use range files or rule files for extracting
+	 * @param rangeFile = the rule OR range file being used for the extraction
+	 * @param extractionMode = the type of extraction to be done (DT, MZ, RT, or DTMZ)
+	 */
+	public ArrayList<MobData> generateMobiligram2D(DataVectorInfoObject function, boolean ruleMode, File rangeFile, int extractionMode, boolean dt_in_ms){
+		// Collect mobData for all functions in the list
+		ArrayList<MobData> allMobData = new ArrayList<>();
+
+		if (extractionMode != RTDT_MODE){
+			System.out.println("ERROR: 2D extraction requested for non-2D mode. Returning no data");
+			return allMobData;
+		}
+//		DataVectorInfoObject function = allFunctions.get(0);
+		double maxDT = get_max_dt(function.getRawDataPath());
+		allMobData = generateReplicateRTDT(function, rangeFile, ruleMode, dt_in_ms, maxDT);
+
+		return allMobData;
+	}
 	/**
 	 * Updated extract Mobiligram method that takes a list of functions to analyze (length 1 for single
 	 * file analyses), calls the appropriate helper methods based on the extraction mode, then returns
 	 * the generated mobdata for output as appropriate. 
 	 * @param allFunctions = the list of functions (data) to be extracted with all their associated information in DataVectorInfoObject format
-	 * @param outputFilePath = where to write the output file
+	 * @param dt_in_ms = whether to save output in bins or ms
 	 * @param ruleMode = whether to use range files or rule files for extracting
-	 * @param ruleFile = the rule OR range file being used for the extraction
-	 * @param extraction_mode = the type of extraction to be done (DT, MZ, RT, or DTMZ)
+	 * @param rangeFile = the rule OR range file being used for the extraction
+	 * @param extractionMode = the type of extraction to be done (DT, MZ, RT, or DTMZ)
 	 */
 	public ArrayList<MobData> extractMobiligramReturn(ArrayList<DataVectorInfoObject> allFunctions, boolean ruleMode, File rangeFile, int extractionMode, boolean dt_in_ms){
 		// Collect mobData for all functions in the list
-		ArrayList<MobData> allMobData = new ArrayList<MobData>();
+		ArrayList<MobData> allMobData = new ArrayList<>();
+		if (extractionMode == RTDT_MODE){
+			for (DataVectorInfoObject function : allFunctions) {
+				// TODO: fix or remove
+				allMobData = generateMobiligram2D(function, ruleMode, rangeFile, extractionMode, dt_in_ms);
+			}
+		} else {
+			for (DataVectorInfoObject function : allFunctions) {
+				String rawDataFilePath = function.getRawDataPath();
+				String rawName = function.getRawDataName();
 
-		for (DataVectorInfoObject function : allFunctions){
-			String rawDataFilePath = function.getRawDataPath();
-			String rawName = function.getRawDataName();
+				int functionNum = function.getFunction();
+				double conecv = function.getConeCV();
+				double trapcv = function.getCollisionEnergy();
+				double transfcv = function.getTransfCV();
+				double wh = function.getWaveHeight();
+				double wv = function.getWaveVel();
+				double[] rangeVals = function.getRangeVals();
+				String rangeName = function.getRangeName();
 
-			int functionNum = function.getFunction();
-			double conecv = function.getConeCV();
-			double trapcv = function.getCollisionEnergy();
-			double transfcv = function.getTransfCV();
-			double wh = function.getWaveHeight();
-			double wv = function.getWaveVel();
-			double[] rangeVals = function.getRangeVals();
-			String rangeName = function.getRangeName();
+				double[][] data = null;
+				try {
+					if (extractionMode == DT_MODE) {
+						data = generateReplicateMobiligram(rawDataFilePath, functionNum, 0, rangeVals, rangeName, rangeFile, ruleMode);
 
-			double[][] data = null;
-			try {
-				if (extractionMode == DT_MODE){
-					data = generateReplicateMobiligram(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, rangeFile, ruleMode);
-	
-				} else if (extractionMode == MZ_MODE){
-					data = generateReplicateSpectrum(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, rangeFile, ruleMode);
-	
-				} else if (extractionMode == RT_MODE){
-					data = generateReplicateChromatogram(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, rangeFile, ruleMode);
-	
-				} else if (extractionMode == DTMZ_MODE){
-					//    				data = generateReplicateDTMZ(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
+					} else if (extractionMode == MZ_MODE) {
+						data = generateReplicateSpectrum(rawDataFilePath, functionNum, 0, rangeVals, rangeName, rangeFile, ruleMode);
+
+					} else if (extractionMode == RT_MODE) {
+						data = generateReplicateChromatogram(rawDataFilePath, functionNum, 0, rangeVals, rangeName, rangeFile, ruleMode);
+
+					}  //    				data = generateReplicateDTMZ(rawDataFilePath, functionNum, 0, true, rangeVals, rangeName, ruleFile, ruleMode);
+
+				} catch (IOException ex) {
+					ex.printStackTrace();
 				}
+				if (data == null) {
+					System.out.println("Error during extraction! Check your raw data - it might be empty or corrupted");
+				}
+
+				MobData currentMob = new MobData(data, rawName, rangeName, conecv, trapcv, transfcv, wh, wv);
+				allMobData.add(currentMob);
 			}
-			catch (FileNotFoundException ex) 
-			{
-				ex.printStackTrace();
-			} 
-			catch (IOException ex) 
-			{
-				ex.printStackTrace();
-			}
-			if (data == null){
-				System.out.println("Error during extraction! Check your raw data - it might be empty or corrupted");
-			}
-			
-			MobData currentMob = new MobData(data,rawName,rangeName,conecv,trapcv,transfcv,wh,wv);
-			allMobData.add(currentMob);
 		}
 		return allMobData;
 	}
@@ -522,7 +514,7 @@ public class IMExtractRunner {
 	/**
 	 * Method to manually find the maximum drift time of a file using the max m/z defined in
 	 * the acquisition mass range of the file's _extern.inf file. ONLY tested for Synapt G2 so far.
-	 * @param rawDataPath
+	 * @param rawDataPath path to raw folder
 	 * @return max drift time (double)
 	 */
 	private double get_max_dt(String rawDataPath){
@@ -542,13 +534,13 @@ public class IMExtractRunner {
 				if (line.toUpperCase().startsWith("END MASS")){
 					String[] splits = line.split("\\t");
 					String strmz = splits[splits.length - 1];
-					max_mz = new Double(strmz);
+					max_mz = Double.parseDouble(strmz);
 				}
 				// MSMS mode
 				if (line.toUpperCase().startsWith("MSMS END MASS")){
 					String[] splits = line.split("\\t");
 					String strmz = splits[splits.length - 1];
-					max_mz = new Double(strmz);
+					max_mz = Double.parseDouble(strmz);
 				}
 				// check for mobility delays
 				if (line.startsWith("Using Mobility Delay after Trap Release")){
@@ -578,7 +570,7 @@ public class IMExtractRunner {
 			reader.close();
 		}	
 
-		catch (IOException ex){
+		catch (IOException ignored){
 			
 		}
 		return max_dt;
@@ -587,11 +579,11 @@ public class IMExtractRunner {
 	/**
 	 * Convert from maxmium m/z to max drift time for synapt G2 using Waters built-in cutoffs. Accounts
 	 * for mobility trapping delay times. 
-	 * @param maxMZ
+	 * @param maxMZ max m/z in file to determine max DT used
 	 * @return max drift time (double)
 	 */
 	private double convert_mzdt_max(double maxMZ, double delay_time){
-		double dtmax = 0;
+		double dtmax;
 		if (maxMZ <= 600){
 			dtmax = 7.61;
 		} else if (maxMZ <= 1200){
@@ -616,8 +608,8 @@ public class IMExtractRunner {
 	/**
 	 * Method to change the DT information of the first MobData array ONLY in a list of mobdata.
 	 * Converts to DT using information from file's _extern.inf. 
-	 * @param allmobdata
-	 * @return
+	 * @param allmobdata arraylist of mobdata containers
+	 * @return updated mobdata
 	 */
 	private ArrayList<MobData> convert_mobdata_to_ms(ArrayList<MobData> allmobdata, double maxDT){		
 		// Convert each bin to drift time ((bin - 1) * max_dt / 199)
@@ -626,9 +618,22 @@ public class IMExtractRunner {
 		// to a drift time of 0 (millisecond DTs are 0-indexed, whereas bin numbers are 1-indexed, so all
 		// bins have 1 subtracted from them to be converted correctly)
 		for (int i=0; i < allmobdata.get(0).getMobdata().length; i++){
-			allmobdata.get(0).getMobdata()[i][0] = (allmobdata.get(0).getMobdata()[i][0] - 1) * maxDT / 199;
+			allmobdata.get(0).getMobdata()[i][0] = convertBinToDT(allmobdata.get(0).getMobdata()[i][0], maxDT);
 		}
 		return allmobdata;
+	}
+
+	/**
+	 * Convert bin to DT (ms). NOTE: For some reason, there are actually only 199 bins, not 200. Doing the conversion by
+	 * dividing by 199 gives results that match the output from Driftscope/MassLynx. Bin 1 is set
+	 * to a drift time of 0 (millisecond DTs are 0-indexed, whereas bin numbers are 1-indexed, so all
+	 * bins have 1 subtracted from them to be converted correctly)
+	 * @param inputBin starting bin number
+	 * @param maxDT max DT of the acquisition (ms)
+	 * @return DT in ms
+	 */
+	private static double convertBinToDT(double inputBin, double maxDT) {
+		return (inputBin - 1) * maxDT / 199;
 	}
 	
 	/**
@@ -636,9 +641,9 @@ public class IMExtractRunner {
 	 * (if using combined outputs) has the same bin names (e.g. DT bin 1, 2, 3, ...) and writes
 	 * one column per function using the same initial set of bins. Returns String[] that can
 	 * be directly written to the output file. 
-	 * @param allMobData
-	 * @param infoTypes
-	 * @return
+	 * @param allMobData list of mobdata containers
+	 * @param infoTypes boolean array of what to print
+	 * @return output strings to write to file
 	 */
 	private String[] dtmzWriteOutputs(ArrayList<MobData> allMobData, boolean[] infoTypes, double maxdt){  	
 		ArrayList<String> lines = new ArrayList<String>();
@@ -651,19 +656,23 @@ public class IMExtractRunner {
 		if (infoTypes[USECONE_TYPES]){
 			lines.add("$ConeCV:"); 
 			HEADER_LENGTH++;
+			// sort by cone if trap is not active
+			if (! infoTypes[USETRAP_TYPES]) {
+				allMobData.sort(Comparator.comparingInt(d -> (int) d.getConeCV()));
+			}
 		}
 		if (infoTypes[USETRAP_TYPES]){
 			lines.add("$TrapCV:"); 
 			HEADER_LENGTH++;
-			Collections.sort(allMobData, new Comparator<MobData>(){
-				public int compare(MobData d1, MobData d2){
-					return (int) d1.getTrapCV() - (int) d2.getTrapCV();
-				}
-			});
+			allMobData.sort(Comparator.comparingInt(d -> (int) d.getTrapCV()));
 		}
 		if (infoTypes[USETRANSF_TYPES]){
 			lines.add("$TransferCV:");
 			HEADER_LENGTH++;
+			// sort by transfer if trap is not active
+			if (! infoTypes[USETRAP_TYPES]) {
+				allMobData.sort(Comparator.comparingInt(d -> (int) d.getTransferCV()));
+			}
 		}
 		if (infoTypes[USEWH_TYPES]){
 			lines.add("$WaveHt:"); 
@@ -748,11 +757,11 @@ public class IMExtractRunner {
 				// Catch empty mobdata
 				if (data.getMobdata().length == 0){
 					for (int i = HEADER_LENGTH; i < 200 + HEADER_LENGTH; i++){
-						arraylines[i] = arraylines[i] + "," + String.valueOf(0);
+						arraylines[i] = arraylines[i] + "," + 0;
 					}
 				}
 				for (int i = HEADER_LENGTH; i < data.getMobdata().length + HEADER_LENGTH; i++){
-					arraylines[i] = arraylines[i] + "," + String.valueOf(data.getMobdata()[lineIndex][1]);
+					arraylines[i] = arraylines[i] + "," + data.getMobdata()[lineIndex][1];
 					lineIndex++;
 				}
 
@@ -763,7 +772,7 @@ public class IMExtractRunner {
 						"No data in " + data.getRawFileName() + ", collision energy " + data.getCollisionEnergy());
 
 				for (int i = HEADER_LENGTH; i < 200 + HEADER_LENGTH; i++){
-					arraylines[i] = arraylines[i] + "," + String.valueOf(0);
+					arraylines[i] = arraylines[i] + "," + 0;
 				}
 
 			} catch (ArrayIndexOutOfBoundsException ex){
@@ -786,12 +795,12 @@ public class IMExtractRunner {
 	 * the data needs to have each function's 'x' data (raw RT) saved as well as 'y' (intensity).
 	 * Otherwise, code is identical to dtmzWriteOutputs. Duplicated rather than putting if/else 
 	 * at every single line in a single method. 
-	 * @param allMobData
-	 * @param infoTypes
-	 * @return
+	 * @param allMobData list of mobdata containers
+	 * @param infoTypes boolean array of what to print
+	 * @return output strings to write to file
 	 */
 	private String[] rtWriteOutputs(ArrayList<MobData> allMobData, boolean[] infoTypes){  	
-		ArrayList<String> lines = new ArrayList<String>();
+		ArrayList<String> lines = new ArrayList<>();
 
 		// Headers
 		// Loop through the list of data, writing each function's value for this CE to the line
@@ -892,16 +901,12 @@ public class IMExtractRunner {
 						"No data in " + data.getRawFileName() + ", collision energy " + data.getCollisionEnergy());
 
 				for (int i = HEADER_LENGTH; i < 200 + HEADER_LENGTH; i++){
-					arraylines[i] = arraylines[i] + "," + String.valueOf(0);
+					arraylines[i] = arraylines[i] + "," + 0;
 				}
 
 			} catch (ArrayIndexOutOfBoundsException ex){
 				System.out.println("\n" + "WARNING: " +
 						"(Array index error) " + data.getRawFileName() + ", range File " + data.getRangeName());
-				//	    			for (int i = HEADER_LENGTH; i < allMobData.get(0).getMobdata().length + HEADER_LENGTH; i++){	
-				//	    				arraylines[i] = arraylines[i] + "," + "0";
-				//	    				lineIndex++;
-				//	    			}
 			}
 		}
 		return arraylines;
@@ -911,130 +916,183 @@ public class IMExtractRunner {
 	    
 	/**
 	 * Rule file spectrum extract method. Passes the extraction argument string to generateMZ. 
-	 * @param rawPath
-	 * @param nfunction
-	 * @param slice
-	 * @param selectRegion
-	 * @param rangeValues
-	 * @param rangeName
-	 * @param ruleFile
-	 * @return
-	 * @throws FileNotFoundException
-	 * @throws IOException
+	 * @param rawPath path to raw
+	 * @param nfunction function number
+	 * @param slice I think this is irrelevant
+	 * @param rangeValues range value array
+	 * @param rangeName name of range file
+	 * @param ruleFile path to range or rule file
+	 * @return double[][] of 1 row of axis values, 1 row of intensity values
+	 * @throws FileNotFoundException if not found
+	 * @throws IOException if something happened
 	 */
-	public double[][] generateReplicateSpectrum(String rawPath, int nfunction, int slice, 
-			boolean selectRegion, double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode) throws FileNotFoundException, IOException
+	public double[][] generateReplicateSpectrum(String rawPath, int nfunction, int slice,
+												double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode) throws FileNotFoundException, IOException
 	{
 	    File rawFile = new File(rawPath);
 	
 	    String rawDataName = rawFile.getName();
 		// Get a unique id for the replicate chromatogram
 		// Edited to make it actually unique for multiple range files - added name of Range file to it
-		String replicateID = null;
+		String replicateID;
 		if( slice > 0 )
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + slice + "]";
 		else
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + rangeValues[START_MZ] + "_" + rangeValues[STOP_MZ]  + "]";
 		
 		// Generate a spectrum for the full data
-		String specPath = "";
+		String specPath;
 		if (ruleMode){
 	    	specPath = generateMZ(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, ruleFile);
 		} else {
 	    	specPath = generateMZ(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, null);
 		}
-	
-	    double[][] data = getTraceData(specPath, MZ_MODE, rangeValues);
-	    
-	    // trim data to only includes range specified (by default, IMSExtract writes full m/z range, even if empty)
-//	    double mz_low = rangeValues[START_MZ];
-//	    double mz_high = rangeValues[STOP_MZ];
-//	    
-//	    int start_index = java.util.Arrays.binarySearch(data[0], mz_low);
-//	    int end_index = java.util.Arrays.binarySearch(data[0], mz_high);
-//	    
-//	    double[][] final_data = Arrays.copyOfRange(data, start_index, end_index);
-	    
-	    return data;
+		return getTraceData(specPath, MZ_MODE, rangeValues);
 	}
 
 	/**
 	 * Chomatogram (1D RT) extract method. Passes the extraction argument string to generateRT. 
-	 * @param rawPath
-	 * @param nfunction
-	 * @param slice
-	 * @param selectRegion
-	 * @param rangeValues
-	 * @param rangeName
-	 * @param ruleFile
-	 * @return
-	 * @throws FileNotFoundException
-	 * @throws IOException
+	 * @param rawPath path to raw
+	 * @param nfunction function number
+	 * @param slice I think this is irrelevant
+	 * @param rangeValues range value array
+	 * @param rangeName name of range file
+	 * @param ruleFile path to range or rule file
+	 * @return double[][] of 1 row of axis values, 1 row of intensity values
+	 * @throws FileNotFoundException if not found
+	 * @throws IOException if something happened
 	 */
-	public double[][] generateReplicateChromatogram(String rawPath, int nfunction, int slice, 
-			boolean selectRegion, double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode) throws FileNotFoundException, IOException
+	public double[][] generateReplicateChromatogram(String rawPath, int nfunction, int slice,
+													double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode) throws FileNotFoundException, IOException
 	{
 	    File rawFile = new File(rawPath);
 	
 	    String rawDataName = rawFile.getName();
 		// Get a unique id for the replicate chromatogram
 		// Edited to make it actually unique for multiple range files - added name of Range file to it
-		String replicateID = null;
+		String replicateID;
 		if( slice > 0 )
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + slice + "]";
 		else
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + rangeValues[START_MZ] + "_" + rangeValues[STOP_MZ]  + "]";
 		
 		// Generate a spectrum for the full data
-		String specPath = "";
+		String specPath;
 		if (ruleMode){
 	    	specPath = generateRT(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, ruleFile);
 		} else {
 	    	specPath = generateRT(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, null);
 		}
-	
-	    double[][] data = getTraceData(specPath, RT_MODE, rangeValues);
-	    
-	    return data;
+		return getTraceData(specPath, RT_MODE, rangeValues);
 	}
 
 	/**
-		 * 1D DT data slice generator. Passes slice name and argument string to generateDT method. 
-		 * @param rawPath
-		 * @param nfunction
-		 * @param slice
-		 * @param selectRegion
-		 * @param rangeValues
-		 * @param rangeName
-		 * @param ruleFile
-		 * @param ruleMode
-		 * @return
-		 * @throws FileNotFoundException
-		 * @throws IOException
-		 */
-	private double[][] generateReplicateMobiligram(String rawPath, int nfunction, int slice, 
-			boolean selectRegion, double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode)throws FileNotFoundException, IOException {
+	 * 1D DT data slice generator. Passes slice name and argument string to generateDT method.
+	 * @param rawPath path to raw
+	 * @param nfunction function number
+	 * @param slice I think this is irrelevant
+	 * @param rangeValues range value array
+	 * @param rangeName name of range file
+	 * @param ruleFile path to range or rule file
+	 * @return double[][] of 1 row of axis values, 1 row of intensity values
+	 * @throws FileNotFoundException if not found
+	 * @throws IOException if something happened
+	 */
+	private double[][] generateReplicateMobiligram(String rawPath, int nfunction, int slice,
+												   double[] rangeValues, String rangeName, File ruleFile, boolean ruleMode)throws FileNotFoundException, IOException {
 	
 		File rawFile = new File(rawPath);	
 		String rawDataName = rawFile.getName();
 		// Get a unique id for the replicate chromatogram
 		// Edited to make it actually unique for multiple range files - added name of Range file to it
-		String replicateID = null;
+		String replicateID;
 		if( slice > 0 )
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + slice + "]";
 		else
 			replicateID = rangeName + "_" + rawDataName + "_" + nfunction + "[" + rangeValues[START_DT] + "_" + rangeValues[STOP_DT]  + "]";
 	
 		// Generate a spectrum for the full data
-		String specPath = "";
+		String specPath;
 		if (ruleMode){
 			specPath = generateDT(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, ruleFile);
 		} else {
 			specPath = generateDT(replicateID, rawFile, nfunction, rangeValues[IMExtractRunner.START_MZ], rangeValues[IMExtractRunner.STOP_MZ], rangeValues[IMExtractRunner.START_RT], rangeValues[IMExtractRunner.STOP_RT], rangeValues[IMExtractRunner.START_DT], rangeValues[IMExtractRunner.STOP_DT], (int)rangeValues[IMExtractRunner.DT_BINS], ruleMode, null);
 		}
-	
-		double[][] data = getTraceData(specPath, DT_MODE, rangeValues);
-		return data;
+
+		return getTraceData(specPath, DT_MODE, rangeValues);
+	}
+
+	private static ArrayList<MobData> generateReplicateRTDT(DataVectorInfoObject function, File rangeFile, boolean ruleMode, boolean dt_in_ms, double maxDT){
+
+		/* RTDT (2D) */
+		// Write range file for IMExtract.exe
+		StringBuilder cmdarray = new StringBuilder();
+		try
+		{
+			cmdarray.append(function.getRangeVals()[START_MZ]).append(" ").append(function.getRangeVals()[STOP_MZ]).append(" 1").append(System.getProperty("line.separator"));
+			cmdarray.append(function.getRangeVals()[START_RT]).append(" ").append(function.getRangeVals()[STOP_RT]).append(" ").append(String.format("%d", (int) rtBins)).append(System.getProperty("line.separator"));
+			cmdarray.append(function.getRangeVals()[START_DT]).append(" ").append(function.getRangeVals()[STOP_DT]).append(" ").append(String.format("%d", (int) dtBins)).append(System.getProperty("line.separator"));
+
+			File dtRangeFile = new File(preferences.getLIB_PATH() + "\\ranges_2dRTDT.txt");
+			BufferedWriter writer = new BufferedWriter(new FileWriter(dtRangeFile));
+			writer.write(cmdarray.toString());
+			writer.flush();
+			writer.close();
+		}
+		catch(Exception ex)
+		{
+			ex.printStackTrace();
+			return null;
+		}
+
+		// Run IMExtract.exe
+		String path = null;
+		String replicateID = function.getRangeName() + "_" + function.getRawDataName() + "_" + function.getFunction() + "[" + function.getRangeVals()[START_DT] + "_" + function.getRangeVals()[STOP_DT]  + "]";
+		try
+		{
+			path = root.getPath() + File.separator + replicateID + ".csv";
+			cmdarray.setLength(0);
+			cmdarray.append(exeFile.getCanonicalPath()).append(" ");
+			cmdarray.append("-d ");
+			cmdarray.append("\"").append(function.getRawDataPath()).append("\" ");
+			cmdarray.append("-f ").append(function.getFunction()).append(" ");
+			cmdarray.append("-o ");
+			cmdarray.append("\"").append(path).append("\" ");
+			cmdarray.append("-t ");
+			cmdarray.append("mobilicube ");
+			cmdarray.append("-p ");
+			cmdarray.append("\"").append(preferences.getLIB_PATH()).append("\\ranges_2dRTDT.txt\" ");
+			if (ruleMode) {
+				cmdarray.append(" -pdtmz ");
+				cmdarray.append("\"").append(rangeFile.getAbsolutePath()).append("\"");
+			}
+			cmdarray.append("-textOut 1");
+			runIMSExtract(cmdarray.toString());
+		}
+		catch( Exception ex )
+		{
+			ex.printStackTrace();
+		}
+		ArrayList<Double> cv_axis = getCVfromCEdat();
+		int[] dt_axis_base = IntStream.rangeClosed(1, 200).toArray();
+		ArrayList<Double> dtAxisList = new ArrayList<>();
+		// convert DT to ms if requested
+		for (int dtBin : dt_axis_base) {
+			double finalDt = dtBin;		// todo - check this - no need to convert because we make people enter DT range in bins (?)
+//			if (dt_in_ms) {
+//				finalDt = convertBinToDT(dtBin, maxDT);
+//			}
+			if (finalDt >= function.getRangeVals()[START_DT] && finalDt <= function.getRangeVals()[STOP_DT]) {
+				dtAxisList.add(finalDt);
+			}
+		}
+		double[] dt_axis = new double[dtAxisList.size()];
+		for (int i=0; i < dtAxisList.size(); i++) {
+			dt_axis[i] = dtAxisList.get(i);
+		}
+
+		// Read data from IMExtract.exe and return it
+		return getTextData(path, dt_axis, cv_axis, function);
 	}
 
 	    /**
@@ -1050,9 +1108,9 @@ public class IMExtractRunner {
 	        /* MZ plot (1D plot) */
 	        try
 	        {
-	            cmdarray.append(startMZ + " " + stopMZ + " " + mzBins + System.getProperty("line.separator"));
-	            cmdarray.append(startRT + " " + stopRT + " 1" + System.getProperty("line.separator"));
-	            cmdarray.append(startDT + " " + stopDT + " 1" + System.getProperty("line.separator"));
+	            cmdarray.append(startMZ).append(" ").append(stopMZ).append(" ").append(mzBins).append(System.getProperty("line.separator"));
+	            cmdarray.append(startRT).append(" ").append(stopRT).append(" 1").append(System.getProperty("line.separator"));
+	            cmdarray.append(startDT).append(" ").append(stopDT).append(" 1").append(System.getProperty("line.separator"));
 	            
 	            File mzRangeFile = new File(preferences.getLIB_PATH() + "\\ranges_1DMZ.txt");
 	            BufferedWriter writer = new BufferedWriter(new FileWriter(mzRangeFile));
@@ -1078,12 +1136,12 @@ public class IMExtractRunner {
 	            path = root.getPath() + File.separator + replicateID + ".1dMZ";
 	
 	            cmdarray.setLength(0);
-	            cmdarray.append(exeFile.getCanonicalPath() + " ");
+	            cmdarray.append(exeFile.getCanonicalPath()).append(" ");
 	            cmdarray.append("-d ");
-	            cmdarray.append("\"" + rawFile.getPath() + "\" ");
-	            cmdarray.append("-f " + nFunction + " ");
+	            cmdarray.append("\"").append(rawFile.getPath()).append("\" ");
+	            cmdarray.append("-f ").append(nFunction).append(" ");
 	            cmdarray.append("-o ");
-	            cmdarray.append("\"" + path + "\" ");
+	            cmdarray.append("\"").append(path).append("\" ");
 	            cmdarray.append("-t ");
 	            cmdarray.append("mobilicube ");
 	            cmdarray.append("-p ");
@@ -1095,19 +1153,19 @@ public class IMExtractRunner {
 	                if( ruleFile.exists() )
 	                {
 	                    cmdarray.append(" -pdtmz ");
-	                    cmdarray.append("\"" + ruleFile.getAbsolutePath() + "\"");
+	                    cmdarray.append("\"").append(ruleFile.getAbsolutePath()).append("\"");
 	                }
 	                File rtdt = new File( preferences.getLIB_PATH() + "\\outRTDT.txt" );
 	                if( rtdt.exists() )
 	                {
 	                    cmdarray.append(" -prtdt ");
-	                    cmdarray.append("\"" + rtdt.getAbsolutePath() + "\"");
+	                    cmdarray.append("\"").append(rtdt.getAbsolutePath()).append("\"");
 	                }
 	                File rtmz = new File( preferences.getLIB_PATH() + "\\outRTMZ.txt" );
 	                if( rtmz.exists() )
 	                {
 	                    cmdarray.append(" -prtmz ");
-	                    cmdarray.append("\"" + rtmz.getAbsolutePath() + "\"");
+	                    cmdarray.append("\"").append(rtmz.getAbsolutePath()).append("\"");
 	                }
 	            }
 	    //        _log.writeMessage(cmdarray);
@@ -1135,9 +1193,9 @@ public class IMExtractRunner {
 		        /* RT plot (1D plot) */
 		        try
 		        {
-		            cmdarray.append(startMZ + " " + stopMZ + " 1" + System.getProperty("line.separator"));
-		            cmdarray.append(startRT + " " + stopRT + " " + rtBins + System.getProperty("line.separator"));
-		            cmdarray.append(startDT + " " + stopDT + " 1" + System.getProperty("line.separator"));
+		            cmdarray.append(startMZ).append(" ").append(stopMZ).append(" 1").append(System.getProperty("line.separator"));
+		            cmdarray.append(startRT).append(" ").append(stopRT).append(" ").append(rtBins).append(System.getProperty("line.separator"));
+		            cmdarray.append(startDT).append(" ").append(stopDT).append(" 1").append(System.getProperty("line.separator"));
 		
 		            File rtRangeFile = new File(preferences.getLIB_PATH() + "\\ranges_1DRT.txt");
 		            BufferedWriter writer = new BufferedWriter(new FileWriter(rtRangeFile));
@@ -1149,32 +1207,24 @@ public class IMExtractRunner {
 		        {
 		//            _log.writeMessage("Unable to write out RT range file");
 		            ex.printStackTrace();
-		            StackTraceElement[] trace = ex.getStackTrace();
-		            for( int i=0; i<trace.length; i++ )
-		            {
-//		                StackTraceElement st = trace[i];
-		//                _log.writeMessage(st.toString());
-		            }
 		            return null;
 		        }
-		        
-		        String path = null;
-		        
+		        String path;
 		        try
 		        {
 		            path = root.getPath() + File.separator + replicateID + ".1dRT";
 		
 		            cmdarray.setLength(0);
-		            cmdarray.append(exeFile.getCanonicalPath() + " ");
+		            cmdarray.append(exeFile.getCanonicalPath()).append(" ");
 		            cmdarray.append("-d ");
-		            cmdarray.append("\"" + rawFile.getPath() + "\" ");
-		            cmdarray.append("-f " + nFunction + " ");
+		            cmdarray.append("\"").append(rawFile.getPath()).append("\" ");
+		            cmdarray.append("-f ").append(nFunction).append(" ");
 		            cmdarray.append("-o ");
-		            cmdarray.append("\"" + path + "\" ");
+		            cmdarray.append("\"").append(path).append("\" ");
 		            cmdarray.append("-t ");
 		            cmdarray.append("mobilicube ");
 		            cmdarray.append("-p ");
-		            cmdarray.append("\"" + preferences.getLIB_PATH() + "\\ranges_1DRT.txt\"");
+		            cmdarray.append("\"").append(preferences.getLIB_PATH()).append("\\ranges_1DRT.txt\"");
 		            if( bSelectRegion )
 		            {
 		                /*cmdarray += " -px ";
@@ -1183,25 +1233,25 @@ public class IMExtractRunner {
 		            	if( ruleFile.exists() )
 		                {
 		                    cmdarray.append(" -pdtmz ");
-		                    cmdarray.append("\"" + ruleFile.getAbsolutePath() + "\"");
+		                    cmdarray.append("\"").append(ruleFile.getAbsolutePath()).append("\"");
 		                }
 		                File dtmz = new File( preferences.getLIB_PATH() + "\\outDTMZ.txt" );
 		                if( dtmz.exists() )
 		                {
 		                    cmdarray.append(" -pdtmz ");
-		                    cmdarray.append("\"" + dtmz.getAbsolutePath() + "\"");
+		                    cmdarray.append("\"").append(dtmz.getAbsolutePath()).append("\"");
 		                }
 		                File rtdt = new File( preferences.getLIB_PATH() + "\\outRTDT.txt" );
 		                if( rtdt.exists() )
 		                {
 		                    cmdarray.append(" -prtdt ");
-		                    cmdarray.append("\"" + rtdt.getAbsolutePath() + "\"");
+		                    cmdarray.append("\"").append(rtdt.getAbsolutePath()).append("\"");
 		                }
 		                File rtmz = new File( preferences.getLIB_PATH() + "\\outRTMZ.txt" );
 		                if( rtmz.exists() )
 		                {
 		                    cmdarray.append(" -prtmz ");
-		                    cmdarray.append("\"" + rtmz.getAbsolutePath() + "\"");
+		                    cmdarray.append("\"").append(rtmz.getAbsolutePath()).append("\"");
 		                }
 		            }
 		    //        _log.writeMessage(cmdarray);
@@ -1303,7 +1353,53 @@ public class IMExtractRunner {
         return path;
     }
 
-    
+	/**
+	 * For methods that return text data instead of binary, use this to read the resulting output file.
+	 * (this is very convoluted, but allows this method to use all the existing print/etc code so..)
+	 * @param path path to output file
+	 * @return 2D data array
+	 */
+	private static ArrayList<MobData> getTextData(String path, double[] dt_axis, ArrayList<Double> cv_axis, DataVectorInfoObject function) {
+		ArrayList<MobData> allMobData = new ArrayList<>();
+
+		// Open the text file to read
+		File textFile = new File(path);
+		textFile.deleteOnExit();
+		if( !textFile.exists() ) {
+			return null;
+		}
+
+		// Read file
+		try {
+			BufferedReader reader = new BufferedReader(new FileReader(textFile));
+			String line;
+			int cvIndex = 0;
+			while((line = reader.readLine()) != null) {
+				// Lines are transposed (each row is all DTs from a given CV)
+				String[] splits = line.split(",");
+				double[][] data = new double[dt_axis.length][2];
+
+				// Add dt axis into data array
+				for (int i=0; i < dt_axis.length; i++) {
+					data[i][0] = dt_axis[i];
+				}
+				// Read intensity into into data array
+				for (int i=0; i < splits.length; i++){
+					data[i][1] = Double.parseDouble(splits[i]);
+				}
+
+				// Generate this mobdata
+				MobData currentMob = new MobData(data, function.getRawDataName(), function.getRangeName(), function.getConeCV(), cv_axis.get(cvIndex), function.getTransfCV(), function.getWaveHeight(), function.getWaveVel());
+				allMobData.add(currentMob);
+				cvIndex++;
+			}
+			reader.close();
+		} catch (IOException ex) {
+			System.out.println("Error: could not find text file to extract. No data returned " + path);
+			return null;
+		}
+		return allMobData;
+	}
 
 
     private synchronized static double[][] getTraceData(String path, int nType, double[] rangeVals) throws FileNotFoundException, IOException
@@ -1322,7 +1418,7 @@ public class IMExtractRunner {
         FileChannel channel = rafFile.getChannel();
         
         // The memory mapped buffer
-        MappedByteBuffer nMbb = null;
+        MappedByteBuffer nMbb;
         
         //Read number of mass channels
 
@@ -1424,19 +1520,14 @@ public class IMExtractRunner {
 	    }
 	    catch(Exception ex)
 	    {
-	        StackTraceElement trace[] = ex.getStackTrace();
-	        for(int i = 0; i < trace.length; i++)
-	        {
-	        }
-	
 	        return;
 	    }
 	    try
 	    {
 	        InputStream procOut = proc.getInputStream();
 	        InputStream procErr = proc.getErrorStream();
-	        byte buf[] = new byte[1024];
-	        int nRead = 0;
+	        byte[] buf = new byte[1024];
+	        int nRead;
 	        String lineSep = System.getProperty("line.separator");
 	        do
 	        {
@@ -1478,76 +1569,17 @@ public class IMExtractRunner {
 	                    {
 	                        Thread.sleep(300L);
 	                    }
-	                    catch(Exception ex) { }
+	                    catch(Exception ignored) { }
 	            }
 	        } while(true);
 	    }
-	    catch(Exception ex)
+	    catch(Exception ignored)
 	    {
-	        StackTraceElement trace[] = ex.getStackTrace();
-	        for(int i = 0; i < trace.length; i++)
-	        {
-	            StackTraceElement st = trace[i];
-	            System.err.println(st.toString());
-	        }
-	
-	        return;
-	    }
+
+		}
 	    
 	}
 
-	public void writeRawFile(String rawPath, int nfunction, String outputPath, int type, int msUnits, String dtmzRulFilePath, String rtmzRulFilePath, String rtdtRulFilePath)
-    {
-        try {
-            File rawFile = new File(rawPath);
-            
-            File rangesFile = new File(preferences.getLIB_PATH() + "\\rawRanges.txt");
-            
-            // The command array
-            StringBuilder cmdarray = new StringBuilder();
-            // Build up the command
-            cmdarray.append(exeFile.getCanonicalPath() + " ");
-            cmdarray.append("-d ");
-            cmdarray.append("\"" + rawFile.getPath() + "\" ");
-            cmdarray.append("-f " + nfunction + " ");
-            cmdarray.append("-o ");
-            cmdarray.append("\"" + outputPath + "\" ");
-            cmdarray.append("-t ");
-            if( type == 0 )
-            {
-                cmdarray.append("imraw ");            
-            }
-            else
-            {
-                cmdarray.append("imrawdt ");
-                cmdarray.append("-ms " + msUnits + " ");
-            }
-            cmdarray.append("-p ");
-            cmdarray.append("\"" + rangesFile.getCanonicalPath() + "\" ");
-            if( dtmzRulFilePath != null )
-            {
-                cmdarray.append(" -pdtmz ");
-                cmdarray.append("\"" + dtmzRulFilePath + "\"");
-            }
-            if( rtmzRulFilePath != null )
-            {
-                cmdarray.append(" -prtmz ");
-                cmdarray.append("\"" + rtmzRulFilePath + "\"");
-            }
-            if( rtdtRulFilePath != null )
-            {
-                cmdarray.append(" -prtdt ");
-                cmdarray.append("\"" + rtdtRulFilePath + "\"");
-            }
-            // Run imextract
-//            progMon.updateStatusMessage("Writing raw data");
-            runIMSExtract(cmdarray.toString());
-        } 
-        catch (Exception ex) 
-        {
-            Logger.getLogger(IMExtractRunner.class.getName()).log(Level.SEVERE, null, ex);
-        } 
-    }
 
 	// Flags indicating the position of data values in an array
 	public static final int START_MZ = 0;
@@ -1565,6 +1597,7 @@ public class IMExtractRunner {
 	public static int DT_MODE = 1;
 	public static int MZ_MODE = 2;
 	public static int DTMZ_MODE = 3;
+	public static int RTDT_MODE = 4;
 
 	// Range values 
 	private static double minMZ = 0.0;
