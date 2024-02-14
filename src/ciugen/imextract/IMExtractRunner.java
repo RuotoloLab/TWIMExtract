@@ -470,7 +470,8 @@ public class IMExtractRunner {
 			return allMobData;
 		}
 //		DataVectorInfoObject function = allFunctions.get(0);
-		double maxDT = get_max_dt(function.getRawDataPath());
+		double[] arrayResults = get_max_dt(function.getRawDataPath());
+		double maxDT = arrayResults[0];
 		allMobData = generateReplicateRTDT(function, rangeFile, ruleMode, dt_in_ms, maxDT);
 
 		return allMobData;
@@ -540,7 +541,7 @@ public class IMExtractRunner {
 	 * @param rawDataPath path to raw folder
 	 * @return max drift time (double)
 	 */
-	private double get_max_dt(String rawDataPath){
+	private double [] get_max_dt(String rawDataPath){
 		double max_dt = 0.0;
 		double max_mz = 0.0;
 		boolean mob_delay = false;
@@ -694,12 +695,12 @@ public class IMExtractRunner {
 		// bins have 1 subtracted from them to be converted correctly)
 		if (instrumentType == 1.0D) {
 			System.out.println("Converting to DT from bins; G2");
-			for (int i = 0; i < (((MobData)allmobdata.get(0)).getMobdata()).length; i++)
-				((MobData)allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT(((MobData)allmobdata.get(0)).getMobdata()[i][0], maxDT);
+			for (int i = 0; i < ((allmobdata.get(0)).getMobdata()).length; i++)
+				(allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT((allmobdata.get(0)).getMobdata()[i][0], maxDT);
 		} else if (instrumentType == 2.0D) {
 			System.out.println("Converting to DT from bins; cIM");
-			for (int i = 0; i < (((MobData)allmobdata.get(0)).getMobdata()).length; i++)
-				((MobData)allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT_cIM(((MobData)allmobdata.get(0)).getMobdata()[i][0], maxDT, pusherPeriod, adc_delay, ppb);
+			for (int i = 0; i < ((allmobdata.get(0)).getMobdata()).length; i++)
+				(allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT_cIM((allmobdata.get(0)).getMobdata()[i][0], maxDT, pusherPeriod, adc_delay, ppb);
 		}
 		return allmobdata;
 	}
@@ -716,6 +717,19 @@ public class IMExtractRunner {
 	private static double convertBinToDT(double inputBin, double maxDT) {
 		return (inputBin - 1) * maxDT / 199;
 	}
+
+	/**
+	 * Convert bin to DT (ms) fri cIM instrument.
+	 * @param inputBin = number of bins
+	 * @param maxDT = max DT of the acquisition (ms)
+	 * @param pusher_period = Pusher period
+	 * @param adc_start_delay = Delay time
+	 * @param pushes_per_bin = pusher per bin
+	 * @return DT in ms
+	 */
+	private static double convertBinToDT_cIM(double inputBin, double maxDT, double pusher_period, double adc_start_delay, double pushes_per_bin) {
+		return ((inputBin - 1.0D) * pushes_per_bin + adc_start_delay) * pusher_period / 1000.0D;
+	}
 	
 	/**
 	 * Helper method to format text output for MS or DT extractions. Assumes that each function 
@@ -726,7 +740,7 @@ public class IMExtractRunner {
 	 * @param infoTypes boolean array of what to print
 	 * @return output strings to write to file
 	 */
-	private String[] dtmzWriteOutputs(ArrayList<MobData> allMobData, boolean[] infoTypes, double maxdt){  	
+	private String[] dtmzWriteOutputs(ArrayList<MobData> allMobData, boolean[] infoTypes, double maxdt, double instrumentNum, double pusher_period, double adc_start_delay, double pushes_perbin){
 		ArrayList<String> lines = new ArrayList<String>();
 		
 		// Headers
@@ -777,7 +791,7 @@ public class IMExtractRunner {
 				// Mobdata is not empty, so write its contents to the array
 				if (maxdt != 200 && maxdt != 0){
 					// convert DT bins to ms (manually), then write to file
-					allMobData = convert_mobdata_to_ms(allMobData, maxdt);
+					allMobData = convert_mobdata_to_ms(allMobData, maxdt, instrumentNum, pusher_period, adc_start_delay, pushes_perbin);
 				}
 				for (int i = HEADER_LENGTH; i < allMobData.get(0).getMobdata().length + HEADER_LENGTH; i++){
 					lines.add(String.valueOf(allMobData.get(0).getMobdata()[lineIndex][0]));
