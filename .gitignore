@@ -24,6 +24,5 @@ out/lib/ranges_2dRTDT.txt
 *.MF
 _EXAMPLES
 lib
-config
 jars
 jars/TWIMExtract.jar
