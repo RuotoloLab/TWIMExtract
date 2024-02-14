@@ -365,14 +365,26 @@ public class IMExtractRunner {
 			if (extractionMode == RT_MODE){
 				arraylines = rtWriteOutputs(allMobData, infoTypes);
 			} else {
+				//Variables from lost cIM code
+				double instrumentType = 0.0;
+				double pusherPeriod = 0.0;
+				double adc = 0.0;
+				double pushesbin = 0.0;
+
+
 				double maxdt = 200; 	// if extracting in bins, maxdt = max bin
 				if (extractionMode == DT_MODE || extractionMode == RTDT_MODE){
 					if (dt_in_ms){
 						// compute max DT using max m/z info from _extern.inf file
-						maxdt = get_max_dt(allFunctions.get(0).getRawDataPath());
+						double[] arrayResults = get_max_dt(allFunctions.get(0).getRawDataPath());
+						maxdt = arrayResults[0];
+						instrumentType = arrayResults[1];
+						pusherPeriod = arrayResults[2];
+						adc = arrayResults[3];
+						pushesbin = arrayResults[4];
 					}
 				}
-				arraylines = dtmzWriteOutputs(allMobData, infoTypes, maxdt);
+				arraylines = dtmzWriteOutputs(allMobData, infoTypes, maxdt, instrumentType, pusherPeriod, adc, pushesbin);
 			}
 
 			// Now, write all the lines to file
@@ -404,14 +416,25 @@ public class IMExtractRunner {
 		if (saveObj.getExtractionMode() == RT_MODE){
 			arraylines = rtWriteOutputs(allMobData, infoTypes);
 		} else {
+			//Variables from lost cIM code
+			double instrumentType = 0.0;
+			double pusherPeriod = 0.0;
+			double adc = 0.0;
+			double pushesbin = 0.0;
+
 			double maxdt = 200; 	// if extracting in bins, maxdt = max bin
 			if (saveObj.getExtractionMode() == DT_MODE || saveObj.getExtractionMode() == RTDT_MODE){
 				if (saveObj.isDT_in_MS()){
 					// compute max DT using max m/z info from _extern.inf file
-					maxdt = get_max_dt(saveObj.getReferenceFunction().getRawDataPath());
+					double[] arrayResults = get_max_dt(saveObj.getReferenceFunction().getRawDataPath());
+					maxdt = arrayResults[0];
+					instrumentType = arrayResults[1];
+					pusherPeriod = arrayResults[2];
+					adc = arrayResults[3];
+					pushesbin = arrayResults[4];
 				}
 			}
-			arraylines = dtmzWriteOutputs(allMobData, infoTypes, maxdt);
+			arraylines = dtmzWriteOutputs(allMobData, infoTypes, maxdt, instrumentType, pusherPeriod, adc, pushesbin);
 		}
 
 		// Now, write all the lines to file
@@ -522,60 +545,99 @@ public class IMExtractRunner {
 		double max_mz = 0.0;
 		boolean mob_delay = false;
 		double delay_time = 0.0;
+
+		//cIM variables
+		double instrumentType = 0.0;
+		double pusher_period = 0.0;
+		double adc_start_delay = 0.0;
+		double pushes_per_bin = 0.0;
 		
 		try {
 			
-			// read the file
+			// read the file once to get instrument type
 			File rawData = new File(rawDataPath, "_extern.inf");
+			System.out.println("Accesing extern");
+			BufferedReader firstReader = new BufferedReader(new FileReader(rawData));
+			String firstline = firstReader.readLine();
+			while (firstline != null) {
+				if (firstline.toUpperCase().startsWith("ACQUISITION DEVICE")) {
+					instrumentType = 1.0D;
+				} else if (firstline.startsWith("Cyclic.")) {
+					instrumentType = 2.0D;
+					break;
+				}
+				firstline = firstReader.readLine();
+			}
+			firstReader.close();
+
+			//Extract correct variables based on instrument type
 			BufferedReader reader = new BufferedReader(new FileReader(rawData));
 			String line = reader.readLine();
-			while (line != null){
-				// MS mode
-				if (line.toUpperCase().startsWith("END MASS")){
-					String[] splits = line.split("\\t");
-					String strmz = splits[splits.length - 1];
-					max_mz = Double.parseDouble(strmz);
+			while (line != null) {
+				if (instrumentType == 1.0D) {
+					if (line.toUpperCase().startsWith("END MASS")) {
+						String[] splits = line.split("\\t");
+						String strmz = splits[splits.length - 1];
+						max_mz = Double.parseDouble(strmz);
+					}
+					if (line.toUpperCase().startsWith("MSMS END MASS")) {
+						String[] splits = line.split("\\t");
+						String strmz = splits[splits.length - 1];
+						max_mz = Double.parseDouble(strmz);
+					}
+					if (line.startsWith("Using Mobility Delay after Trap Release")) {
+						String[] splits = line.split("\\t");
+						String strDelay = splits[splits.length - 1];
+						mob_delay = Boolean.parseBoolean(strDelay);
+					}
+					if (line.startsWith("IMS Wave Delay")) {
+						String[] splits = line.split("\\t");
+						String strDelayTime = splits[splits.length - 1];
+						delay_time = Double.parseDouble(strDelayTime);
+						delay_time /= 10000.0D;
+					}
+				} else if (instrumentType == 2.0D) {
+					if (line.startsWith("System1.PusherFrequency.Setting")) {
+						String[] splits = line.split("\\t");
+						String pf_val = splits[splits.length - 1];
+						pusher_period = Double.parseDouble(pf_val);
+					}
+					if (line.startsWith("TofADC.IMSCycleStartDelay.Setting")) {
+						String[] splits = line.split("\\t");
+						String startd = splits[splits.length - 1];
+						adc_start_delay = Double.parseDouble(startd);
+					}
+					if (line.startsWith("TofADC.PPIMSInc.Setting")) {
+						String[] splits = line.split("\\t");
+						String ppb = splits[splits.length - 1];
+						pushes_per_bin = Double.parseDouble(ppb);
+					}
 				}
-				// MSMS mode
-				if (line.toUpperCase().startsWith("MSMS END MASS")){
-					String[] splits = line.split("\\t");
-					String strmz = splits[splits.length - 1];
-					max_mz = Double.parseDouble(strmz);
-				}
-				// check for mobility delays
-				if (line.startsWith("Using Mobility Delay after Trap Release")){
-					String[] splits = line.split("\\t");
-					String strDelay = splits[splits.length - 1];
-					mob_delay = Boolean.parseBoolean(strDelay);
-				}
-				// check for mobility delays
-				if (line.startsWith("IMS Wave Delay")){
-					String[] splits = line.split("\\t");
-					String strDelayTime = splits[splits.length - 1];
-					delay_time = Double.parseDouble(strDelayTime);
-					// convert to ms. NOTE: dividing by 10,000 because I think the units are incorrect in MassLynx (this gives the correct max DT)
-					delay_time = delay_time / 10000.0;
-				}
-				
 				line = reader.readLine();
 			}
-			
-			// convert max m/z to max DT and return it. Account for delay if it was used
-			if (mob_delay){
-				max_dt = convert_mzdt_max(max_mz, delay_time);
+			if (instrumentType == 1.0D) {
+				if (mob_delay) {
+					max_dt = convert_mzdt_max(max_mz, delay_time);
+				} else {
+					max_dt = convert_mzdt_max(max_mz, 0.0D);
+				}
 			} else {
-				max_dt = convert_mzdt_max(max_mz, 0.0);
+				max_dt = maxdt_cIM(pusher_period, adc_start_delay, pushes_per_bin);
 			}
-
 			reader.close();
-		}	
+		} catch (IOException iOException) {}
 
-		catch (IOException ignored){
-			
-		}
-		return max_dt;
+		double[] mylist = new double[5];
+		mylist[0] = max_dt;
+		mylist[1] = instrumentType;
+		mylist[2] = pusher_period;
+		mylist[3] = adc_start_delay;
+		mylist[4] = pushes_per_bin;
+
+		return mylist;
 	}
-	
+
+
 	/**
 	 * Convert from maxmium m/z to max drift time for synapt G2 using Waters built-in cutoffs. Accounts
 	 * for mobility trapping delay times. 
@@ -604,6 +666,19 @@ public class IMExtractRunner {
 		dtmax = dtmax - delay_time;
 		return dtmax;
 	}
+
+	/**
+	 * Convert from maxmium m/z to max drift time for cIM usinng pusher bahvior and delay.
+	 * @param t = pusher period
+	 * @param d = start delay
+	 * @param f = delay time
+	 * @return cIM max drift time
+	 */
+	private double maxdt_cIM(double t, double d, double f) {
+		double dtmax = (199.0D * f + d) * t;
+		dtmax /= 1000.0D;
+		return dtmax;
+	}
 	
 	/**
 	 * Method to change the DT information of the first MobData array ONLY in a list of mobdata.
@@ -611,14 +686,20 @@ public class IMExtractRunner {
 	 * @param allmobdata arraylist of mobdata containers
 	 * @return updated mobdata
 	 */
-	private ArrayList<MobData> convert_mobdata_to_ms(ArrayList<MobData> allmobdata, double maxDT){		
+	private ArrayList<MobData> convert_mobdata_to_ms(ArrayList<MobData> allmobdata, double maxDT, double instrumentType, double pusherPeriod, double adc_delay, double ppb){
 		// Convert each bin to drift time ((bin - 1) * max_dt / 199)
 		// NOTE: For some reason, there are actually only 199 bins, not 200. Doing the conversion by
 		// dividing by 199 gives results that match the output from Driftscope/MassLynx. Bin 1 is set
 		// to a drift time of 0 (millisecond DTs are 0-indexed, whereas bin numbers are 1-indexed, so all
 		// bins have 1 subtracted from them to be converted correctly)
-		for (int i=0; i < allmobdata.get(0).getMobdata().length; i++){
-			allmobdata.get(0).getMobdata()[i][0] = convertBinToDT(allmobdata.get(0).getMobdata()[i][0], maxDT);
+		if (instrumentType == 1.0D) {
+			System.out.println("Converting to DT from bins; G2");
+			for (int i = 0; i < (((MobData)allmobdata.get(0)).getMobdata()).length; i++)
+				((MobData)allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT(((MobData)allmobdata.get(0)).getMobdata()[i][0], maxDT);
+		} else if (instrumentType == 2.0D) {
+			System.out.println("Converting to DT from bins; cIM");
+			for (int i = 0; i < (((MobData)allmobdata.get(0)).getMobdata()).length; i++)
+				((MobData)allmobdata.get(0)).getMobdata()[i][0] = convertBinToDT_cIM(((MobData)allmobdata.get(0)).getMobdata()[i][0], maxDT, pusherPeriod, adc_delay, ppb);
 		}
 		return allmobdata;
 	}
