@@ -67,17 +67,17 @@ import javax.swing.table.DefaultTableModel;
  * 
  * @author Daniel Polasky 
  * @author Keiran Neeson
- * @version TWIMExtract v1.6
+ * @version TWIMExtract v1.6.1
  *
  *
  */
 public class CIUGenFrame extends javax.swing.JFrame {	
 	
-	private static final String TITLE = "TWIMExtract v1.6";
+	private static final String TITLE = "TWIMExtract v1.6.1";
 
 	
 	private static void print_help(){
-		System.out.println("**********TWIMExtract 1.6 help*********** \n"
+		System.out.println("**********TWIMExtract 1.6.1 help*********** \n"
 				+ "If you use TWIMExtract, please cite: Haynes, S.E., Polasky D. A., Majmudar, J. D., Dixit, S. M., Ruotolo, B. T., Martin, B. R. \n"
 				+ "'Variable-velocity traveling-wave ion mobility separation enhances peak capacity for data-independent acquisition proteomics'. Manuscript in preparation \n"
 				+ "*****************************************\n"
@@ -981,10 +981,10 @@ public class CIUGenFrame extends javax.swing.JFrame {
 
 			} else if (e.getSource() == aboutItem){
 				// Open the 'about' information tab with version, author, etc. Arbitrarily using JPanel1 as the parent component.
-				JOptionPane.showMessageDialog(jPanel1_top, "*** TWIMExtract v1.6 *** \n"
-						+ "Please cite: Haynes, S.E., Polasky D. A., Majmudar, J. D., Dixit, S. M., Ruotolo, B. T., Martin, B. R. "
-						+ "\n Variable-velocity traveling-wave ion mobility separation enhances peak capacity for "
-						+ "\n data-independent acquisition proteomics. Manuscript in preparation");
+				JOptionPane.showMessageDialog(jPanel1_top, "*** TWIMExtract v1.6.1 *** \n"
+						+ "Please cite: Haynes, S.E., Polasky D. A., Dixit, S. M., Majmudar, J. D., Neeson, K., Ruotolo, B. T., Martin, B. R. "
+						+ "\n Variable-velocity traveling-wave ion mobility separation enhancing peak capacity for "
+						+ "\n data-independent acquisition proteomics. Analytical Chemistry. 2017.");
 			}
 		}
 
