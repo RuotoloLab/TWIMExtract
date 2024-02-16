@@ -12,18 +12,7 @@
 # idea
 *.iml
 *.idea
-out/config/config.txt
-out/lib/ranges_1DDT.txt
-out/lib/ranges_1DMZ.txt
-out/lib/ranges_1DRT.txt
-*.bin
-*.1dDT
-unins000.exe
-unins000.dat
-out/lib/ranges_2dRTDT.txt
-*.MF
-_EXAMPLES
-lib
-config
-jars
-jars/TWIMExtract.jar
+
+# Compiling
+TWIMExtract_build
+Output
