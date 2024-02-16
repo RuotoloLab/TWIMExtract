@@ -598,7 +598,7 @@ public class IMExtractRunner {
 						delay_time /= 10000.0D;
 					}
 				} else if (instrumentType == 2.0D) {
-					if (line.startsWith("System1.PusherFrequency.Setting")) {
+					if (line.startsWith("ADC Pusher Period")) {
 						String[] splits = line.split("\\t");
 						String pf_val = splits[splits.length - 1];
 						pusher_period = Double.parseDouble(pf_val);
