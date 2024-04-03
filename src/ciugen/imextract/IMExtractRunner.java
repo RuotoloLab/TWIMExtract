@@ -561,10 +561,12 @@ public class IMExtractRunner {
 			BufferedReader firstReader = new BufferedReader(new FileReader(rawData));
 			String firstline = firstReader.readLine();
 			while (firstline != null) {
-				if (firstline.toUpperCase().startsWith("ACQUISITION DEVICE")) {
-					instrumentType = 1.0D;
-				} else if (firstline.startsWith("Cyclic.")) {
+
+				System.out.println(firstline);
+				if (firstline.startsWith("Cyclic.")) {
 					instrumentType = 2.0D;
+				} else if (firstline.toUpperCase().startsWith("ACQUISITION DEVICE")) {
+					instrumentType = 1.0D;
 					break;
 				}
 				firstline = firstReader.readLine();
