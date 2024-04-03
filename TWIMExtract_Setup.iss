@@ -41,18 +41,18 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 Source: "{#SourceDir}\TWIMExtract_Help.txt"; DestDir: "{app}"; Flags: isreadme
 Source: "{#SourceDir}\root\*"; DestDir: "{app}\root"
-Source: "{#SourceDir}\out\_EXAMPLES\Batches\ExampleBatchCSV.csv"; DestDir: "{app}\_EXAMPLES\Batches"
-Source: "{#SourceDir}\out\lib\*"; DestDir: "{app}\lib"
+Source: "{#SourceDir}\_EXAMPLES\Batches\ExampleBatchCSV.csv"; DestDir: "{app}\_EXAMPLES\Batches"
+Source: "{#SourceDir}\lib\*"; DestDir: "{app}\lib"
 Source: "{#SourceDir}\jars\TWIMExtract.jar"; DestDir: "{app}\jars"
 Source: "{#SourceDir}\runTWIMExtract.bat"; DestDir: "{app}"
 Source: "{#SourceDir}\config\config.txt"; DestDir: "{app}\config"
-Source: "{#SourceDir}\out\_EXAMPLES\Range_and_Rule_Examples\Making Selection Rule Files.docx"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
-Source: "{#SourceDir}\out\_EXAMPLES\Range_and_Rule_Examples\RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
-Source: "{#SourceDir}\out\_EXAMPLES\Range_and_Rule_Examples\RuleExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
-Source: "{#SourceDir}\out\_EXAMPLES\Range_and_Rule_Examples\Legacy format (advanced only)\TWIMExtract_Legacy_RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples\Legacy format (advanced only)"
-Source: "{#SourceDir}\out\_EXAMPLES\Batches\ExampleRangeFolder\RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder"
-Source: "{#SourceDir}\out\_EXAMPLES\Batches\ExampleRangeFolder\RangeExample2.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder"
-Source: "{#SourceDir}\out\_EXAMPLES\Batches\ExampleRangeFolder2\RangeExample3.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder2"
+Source: "{#SourceDir}\_EXAMPLES\Range_and_Rule_Examples\Making Selection Rule Files.docx"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
+Source: "{#SourceDir}\_EXAMPLES\Range_and_Rule_Examples\RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
+Source: "{#SourceDir}\_EXAMPLES\Range_and_Rule_Examples\RuleExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples"
+Source: "{#SourceDir}\_EXAMPLES\Range_and_Rule_Examples\Legacy format (advanced only)\TWIMExtract_Legacy_RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Range_and_Rule_Examples\Legacy format (advanced only)"
+Source: "{#SourceDir}\_EXAMPLES\Batches\ExampleRangeFolder\RangeExample.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder"
+Source: "{#SourceDir}\_EXAMPLES\Batches\ExampleRangeFolder\RangeExample2.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder"
+Source: "{#SourceDir}\_EXAMPLES\Batches\ExampleRangeFolder2\RangeExample3.txt"; DestDir: "{app}\_EXAMPLES\Batches\ExampleRangeFolder2"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

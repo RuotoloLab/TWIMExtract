@@ -557,7 +557,7 @@ public class IMExtractRunner {
 			
 			// read the file once to get instrument type
 			File rawData = new File(rawDataPath, "_extern.inf");
-			System.out.println("Accesing extern");
+			System.out.println("Accessing extern");
 			BufferedReader firstReader = new BufferedReader(new FileReader(rawData));
 			String firstline = firstReader.readLine();
 			while (firstline != null) {
@@ -600,7 +600,7 @@ public class IMExtractRunner {
 						delay_time /= 10000.0D;
 					}
 				} else if (instrumentType == 2.0D) {
-					if (line.startsWith("System1.PusherFrequency.Setting")) {
+					if (line.startsWith("ADC Pusher Period")) {
 						String[] splits = line.split("\\t");
 						String pf_val = splits[splits.length - 1];
 						pusher_period = Double.parseDouble(pf_val);
