@@ -2233,17 +2233,18 @@ public class CIUGenFrame extends javax.swing.JFrame {
 						splits = line.split("\\t");
 						String strCE = splits[splits.length - 1];
 						trapCV = Double.parseDouble(strCE);
+						//	These value can be negative when using negative mode. Take absolute value.
+						trapCV =  Math.abs(trapCV);
+
+
 					} if ( line.startsWith("Using Auto Transfer MS Collision Energy") && reachedFunctions){
 						splits = line.split("\\t");
 						String strCE = splits[splits.length - 1];
 						transfCV = Double.parseDouble(strCE);
+						//	These value can be negative when using negative mode. Take absolute value.
+						transfCV =  Math.abs(transfCV);
 					}
-					// todo: not sure what this is called (or if it's possible)
-//					if (line.startsWith("Stepwave.SampleConeVoltage.Setting") && reachedFunctions){
-//						splits = line.split("\\t");
-//						String strCE = splits[splits.length - 1];
-//						coneCV = Double.parseDouble(strCE);
-//					}
+
 					if (line.startsWith("Start Time") && reachedFunctions){
 						splits = line.split("\\t");
 						String stTime = splits[splits.length - 1];
