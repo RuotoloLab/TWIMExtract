@@ -2232,9 +2232,11 @@ public class CIUGenFrame extends javax.swing.JFrame {
 					if( line.startsWith("Using Auto Trap MS Collision Energy") && reachedFunctions){
 						splits = line.split("\\t");
 						String strCE = splits[splits.length - 1];
+
 						trapCV = Double.parseDouble(strCE);
 						//	These value can be negative when using negative mode. Take absolute value.
 						trapCV =  Math.abs(trapCV);
+						System.out.println("trap CV"+trapCV);
 
 
 					} if ( line.startsWith("Using Auto Transfer MS Collision Energy") && reachedFunctions){

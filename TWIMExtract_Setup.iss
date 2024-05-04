@@ -6,8 +6,8 @@
 #define MyAppPublisher "University of Michigan"
 #define MyAppURL "https://github.com/RuotoloLab/TWIMExtract"
 #define MyAppExeName "runTWIMExtract.bat"
-#define SourceDir "C:\Users\dmakey\twimextract"
-#define OutputDir "C:\Users\dmakey\twimextract\TWIMExtract_build"
+#define SourceDir "C:\Users\caror\TWIMExtract"
+#define OutputDir "C:\Users\caror\TWIMExtract\TWIMExtract_build"
 
 [Setup]
 ; NOTE: The value of AppId uniquely identifies this application.
