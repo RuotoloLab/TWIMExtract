@@ -562,10 +562,11 @@ public class IMExtractRunner {
 			String firstline = firstReader.readLine();
 			while (firstline != null) {
 
-				System.out.println(firstline);
+//				System.out.println(firstline);
 				if (firstline.startsWith("Cyclic.")) {
 					instrumentType = 2.0D;
-				} else if (firstline.toUpperCase().startsWith("ACQUISITION DEVICE")) {
+					break;
+				} else if (firstline.startsWith("Manual Trap Collision Energy")) {
 					instrumentType = 1.0D;
 					break;
 				}
