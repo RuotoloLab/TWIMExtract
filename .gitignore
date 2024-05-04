@@ -16,3 +16,5 @@
 # Compiling
 TWIMExtract_build
 Output
+classes/artifacts/RawExtractor_v3_6_jar/RawExtractor_v3.6.jar
+jars/TWIMExtract.jar
