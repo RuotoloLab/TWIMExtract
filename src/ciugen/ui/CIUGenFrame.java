@@ -2236,7 +2236,7 @@ public class CIUGenFrame extends javax.swing.JFrame {
 						trapCV = Double.parseDouble(strCE);
 						//	These value can be negative when using negative mode. Take absolute value.
 						trapCV =  Math.abs(trapCV);
-						System.out.println("trap CV"+trapCV);
+						//System.out.println("trap CV"+trapCV);
 
 
 					} if ( line.startsWith("Using Auto Transfer MS Collision Energy") && reachedFunctions){
