@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "TWIMExtract"
-#define MyAppVersion "1.6"
+#define MyAppVersion "1.6.1"
 #define MyAppPublisher "University of Michigan"
 #define MyAppURL "https://github.com/RuotoloLab/TWIMExtract"
 #define MyAppExeName "runTWIMExtract.bat"
